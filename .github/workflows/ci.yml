@@ -60,6 +60,6 @@ jobs:
             sleep 2
           done
 
-      - name: Ejecutar tests con coverage
+      - name: Ejecutar tests con coverage (usando jest.config.cjs)
         working-directory: ./eventos-backend
-        run: npm test -- --coverage
+        run: npx jest --config jest.config.cjs --runInBand --detectOpenHandles --coverage
