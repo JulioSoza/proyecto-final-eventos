@@ -38,7 +38,7 @@ jobs:
       PGDATABASE: eventos_db
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node
@@ -52,19 +52,15 @@ jobs:
         working-directory: ./eventos-backend
         run: npm ci
 
-      - name: Esperar PostgreSQL
+      - name: Wait for PostgreSQL
         run: |
           echo "Esperando Postgres..."
-          for i in {1..10}; do
+          for i in {1..15}; do
             pg_isready -h localhost -p 5432 -U eventos_app_user && break
             sleep 2
           done
 
-      - name: Run Jest with correct config
+      - name: Run Jest (backend only)
         working-directory: ./eventos-backend
         run: |
-          npx jest \
-            --config jest.config.cjs \
-            --runInBand \
-            --detectOpenHandles \
-            --coverage
+          npx jest --config jest.config.cjs --coverage --runInBand --detectOpenHandles
