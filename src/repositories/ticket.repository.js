@@ -1,5 +1,5 @@
 // src/repositories/ticket.repository.js
-const { pool } = require('../db/pool');
+const { pool } = require('../../../src/db/pool');
 
 function mapTicket(row) {
   if (!row) return null;

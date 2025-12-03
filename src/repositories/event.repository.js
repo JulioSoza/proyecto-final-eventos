@@ -1,5 +1,5 @@
 // src/repositories/event.repository.js
-const { pool } = require('../db/pool');
+const { pool } = require('../../../src/db/pool');
 
 function mapEvent(row) {
   if (!row) return null;

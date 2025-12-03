@@ -4,18 +4,24 @@ module.exports = {
   rootDir: '.',
   testMatch: ['**/tests/**/*.test.js'],
 
+  // Carpeta donde guardar el reporte
   coverageDirectory: 'coverage',
+
+  // Activar coverage siempre
   collectCoverage: true,
 
-  // Solo medimos coverage de las piezas núcleo que ya tienen buena cobertura
+  // Solo medimos estas piezas "core"
   collectCoverageFrom: [
     'src/middlewares/auth.middleware.js',
     'src/middlewares/role.middleware.js',
-    'src/routes/auth.routes.js',
-    'src/routes/protected.routes.js',
-    'src/utils/jwt.js',
+    'src/routes/**/*.js',
+    'src/utils/**/*.js',
   ],
 
+  // Ignoramos posibles copias internas o paquetes duplicados
+  modulePathIgnorePatterns: ['<rootDir>/eventos-backend/'],
+
+  // Umbral mínimo (80 % global)
   coverageThreshold: {
     global: {
       statements: 80,

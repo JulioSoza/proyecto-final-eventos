@@ -1,7 +1,7 @@
 // src/controllers/tickets.controller.js
-const TicketService = require('../services/ticket.service');
-const ticketRepository = require('../repositories/ticket.repository');
-const eventRepository = require('../repositories/event.repository');
+const TicketService = require('../../eventos-backend/src/services/ticket.service');
+const ticketRepository = require('../../eventos-backend/src/repositories/ticket.repository');
+const eventRepository = require('../../eventos-backend/src/repositories/event.repository');
 
 const ticketService = new TicketService(ticketRepository, eventRepository);
 
