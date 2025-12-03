@@ -2,6 +2,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { pool } = require('./db/pool');
 
 const authRoutes = require('./routes/auth.routes');
@@ -15,18 +16,22 @@ const app = express();
 // 1) CORS PRIMERO
 app.use(cors()); // para desarrollo, permitimos todos los orígenes
 
-// 2) Luego parseo de JSON
+// 2) Parseo de JSON
 app.use(express.json());
 
-// 3) Rutas públicas
+// 3) Servir archivos estáticos de /uploads
+//    Ej: /uploads/events/archivo.png
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// 4) Rutas públicas
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventsRoutes);
 
-// 4) Rutas protegidas
+// 5) Rutas protegidas
 app.use('/api/protected', protectedRoutes);
 app.use('/api/tickets', ticketsRoutes);
 
-// 5) Ruta de salud que también prueba la BD
+// 6) Ruta de salud que también prueba la BD
 app.get('/health', async (req, res) => {
   try {
     const result = await pool.query('SELECT current_user, current_database()');
@@ -48,7 +53,7 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// 6) Middleware de errores al final
+// 7) Middleware de errores al final
 app.use(errorMiddleware);
 
 module.exports = app;

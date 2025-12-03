@@ -3,6 +3,8 @@ const express = require('express');
 const EventService = require('../services/event.service');
 const eventRepository = require('../repositories/event.repository');
 const jwtLib = require('../utils/jwt');
+const { uploadEventImage } = require('../middlewares/upload.middleware');
+const { pool } = require('../db/pool');
 
 const router = express.Router();
 const eventService = new EventService(eventRepository);
@@ -93,5 +95,60 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     next(err);
   }
 });
+
+// POST /api/events/:id/image -> subir imagen de evento (organizer/admin)
+router.post(
+  '/:id/image',
+  requireAuth,
+  requireOrganizerOrAdmin,
+  uploadEventImage.single('image'),
+  async (req, res, next) => {
+    try {
+      const { id } = req.params;
+
+      if (!req.file) {
+        return res.status(400).json({ message: 'Image file is required' });
+      }
+
+      const imageUrl = `/uploads/events/${req.file.filename}`;
+
+      // Actualizar en la BD
+      const { rows } = await pool.query(
+        `
+        UPDATE events
+        SET image_url = $1, updated_at = NOW()
+        WHERE id = $2
+        RETURNING *
+        `,
+        [imageUrl, id]
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ message: 'Event not found' });
+      }
+
+      const row = rows[0];
+
+      // Mapeo consistente con event.repository
+      return res.status(200).json({
+        id: row.id,
+        title: row.title,
+        description: row.description,
+        date: row.date,
+        location: row.location,
+        price: row.price,
+        capacity: row.capacity,
+        remainingCapacity: row.remaining_capacity,
+        categoryId: row.category_id,
+        organizerId: row.organizer_id,
+        imageUrl: row.image_url,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 module.exports = router;

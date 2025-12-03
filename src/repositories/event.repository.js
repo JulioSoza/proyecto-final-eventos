@@ -165,6 +165,7 @@ async function updateEvent(id, data) {
     }
   }
 
+  // Si no hay nada que actualizar, devolvemos el evento actual
   if (!fields.length) {
     const existing = await getEventById(id);
     return existing;
