@@ -18,7 +18,7 @@ function MyTickets() {
 
     try {
       const data = await getMyTickets();
-      // asumimos que el backend devuelve un array
+      // getMyTickets devuelve un array (items), así que asignamos directamente
       setTickets(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
@@ -73,37 +73,49 @@ function MyTickets() {
       ) : (
         <div className="events-list">
           {tickets.map(ticket => {
-            const ev = ticket.event || {}; // por si el backend manda el evento anidado
-            const date = ticket.createdAt ? new Date(ticket.createdAt) : null;
+            // ticket incluye propiedades:
+            // - quantity, unitPrice, total, createdAt
+            // - eventId, eventTitle, eventLocation, eventStartDate
+            const purchaseDate = ticket.createdAt
+              ? new Date(ticket.createdAt)
+              : null;
+            const eventDate = ticket.eventStartDate
+              ? new Date(ticket.eventStartDate)
+              : null;
 
             return (
               <article key={ticket.id} className="event-card">
                 <h2 className="event-title">
-                  {ev.title || `Evento #${ticket.eventId}`}
+                  {ticket.eventTitle || `Evento #${ticket.eventId}`}
                 </h2>
-                {ev.location && <p>Lugar: {ev.location}</p>}
-                {ev.category && <p>Categoría: {ev.category}</p>}
-                {ev.date && (
+                {ticket.eventLocation && <p>Lugar: {ticket.eventLocation}</p>}
+                {eventDate && (
                   <p>
                     Fecha evento:{' '}
-                    {new Date(ev.date).toLocaleDateString()}{' '}
-                    {new Date(ev.date).toLocaleTimeString()}
+                    {eventDate.toLocaleDateString()}{' '}
+                    {eventDate.toLocaleTimeString()}
                   </p>
                 )}
-
                 <p>
                   <strong>Cantidad:</strong> {ticket.quantity || 1}
                 </p>
-                {ticket.price && (
+                {ticket.unitPrice && (
                   <p>
-                    <strong>Precio unitario:</strong> Q {ticket.price}
+                    <strong>Precio unitario:</strong> Q{' '}
+                    {Number(ticket.unitPrice).toFixed(2)}
                   </p>
                 )}
-                {date && (
+                {ticket.total && (
+                  <p>
+                    <strong>Total:</strong> Q{' '}
+                    {Number(ticket.total).toFixed(2)}
+                  </p>
+                )}
+                {purchaseDate && (
                   <p>
                     <strong>Comprado el:</strong>{' '}
-                    {date.toLocaleDateString()}{' '}
-                    {date.toLocaleTimeString()}
+                    {purchaseDate.toLocaleDateString()}{' '}
+                    {purchaseDate.toLocaleTimeString()}
                   </p>
                 )}
               </article>

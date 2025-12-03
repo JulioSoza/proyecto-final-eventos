@@ -4,7 +4,6 @@ import { api } from './client';
 // Obtiene el token guardado en localStorage
 function getAuthToken() {
   try {
-    // Caso más común: guardamos todo en "auth"
     const raw = localStorage.getItem('auth');
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -13,8 +12,6 @@ function getAuthToken() {
   } catch (err) {
     console.error('Error leyendo auth desde localStorage', err);
   }
-
-  // Plan B: token guardado directo
   const token = localStorage.getItem('token');
   return token || null;
 }
@@ -22,15 +19,14 @@ function getAuthToken() {
 // Compra de ticket para un evento
 export async function buyTicket(eventId, quantity = 1) {
   const token = getAuthToken();
-
   if (!token) {
     const error = new Error('No hay token de autenticación');
     error.code = 'NO_TOKEN';
     throw error;
   }
-
+  // Nota: usamos la nueva ruta /tickets/purchase
   const res = await api.post(
-    '/tickets',
+    '/tickets/purchase',
     { eventId, quantity },
     {
       headers: {
@@ -38,25 +34,22 @@ export async function buyTicket(eventId, quantity = 1) {
       },
     }
   );
-
   return res.data;
 }
 
-// (opcional) obtener tickets del usuario logueado
+// Obtener tickets del usuario logueado
 export async function getMyTickets() {
   const token = getAuthToken();
-
   if (!token) {
     const error = new Error('No hay token de autenticación');
     error.code = 'NO_TOKEN';
     throw error;
   }
-
-  const res = await api.get('/tickets/me', {
+  // La nueva ruta devuelve { items: [...] }, devolvemos directamente el array
+  const res = await api.get('/tickets/my', {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-
-  return res.data;
+  return res.data.items;
 }
