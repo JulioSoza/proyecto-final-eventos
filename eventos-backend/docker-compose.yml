@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: eventos_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: eventos_app_user
+      POSTGRES_PASSWORD: eventos_app_pass
+      POSTGRES_DB: eventos_db
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
