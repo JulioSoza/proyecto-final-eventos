@@ -8,7 +8,15 @@ function mapUser(row) {
     id: row.id,
     name: row.name,
     email: row.email,
-    passwordHash: row.password_hash, // <- corregido
+    //
+    // Map the stored password_hash column into a `password` property.  The
+    // AuthService expects the user object to expose a `password` field when
+    // performing comparisons during login.  Without this mapping the
+    // property would be undefined (because previously we exposed it as
+    // `passwordHash`), causing password comparison to fail and tests to
+    // break.  We intentionally avoid exposing the raw field name here to
+    // decouple service logic from database column naming.
+    password: row.password_hash,
     role: row.role,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

@@ -1,21 +1,15 @@
 // src/controllers/tickets.controller.js
-const TicketService = require('../../eventos-backend/src/services/ticket.serviceservices/ticket.service');
-const ticketRepository = require('../../eventos-backend/src/repositories/ticket.repositoryories/ticket.repository');
-const eventRepository = require('../../eventos-backend/src/repositories/event.repositorytories/event.repository');
+const TicketService = require('../services/ticket.service');
+const ticketRepository = require('../repositories/ticket.repository');
 
-const ticketService = new TicketService(ticketRepository, eventRepository);
+// Inicializamos TicketService sólo con el repositorio de tickets.
+// El servicio encapsula la lógica de compra y ajuste de capacidad.
+const ticketService = new TicketService(ticketRepository);
 
 async function purchaseTicket(req, res, next) {
   try {
-    const userId = req.user.id; // viene del token
-    const { eventId, quantity } = req.body;
-
-    const result = await ticketService.purchaseTicket({
-      userId,
-      eventId,
-      quantity
-    });
-
+    // Delegamos la compra al servicio y pasamos el body y el usuario autenticado.
+    const result = await ticketService.purchase(req.body, req.user);
     return res.status(201).json(result);
   } catch (err) {
     if (err.code === 'VALIDATION_ERROR') {

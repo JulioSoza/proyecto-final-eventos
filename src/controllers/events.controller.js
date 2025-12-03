@@ -6,7 +6,8 @@ const eventService = new EventService(eventRepository);
 
 async function createEvent(req, res, next) {
   try {
-    const created = await eventService.createEvent(req.body);
+    // Pasamos el usuario autenticado al servicio para que valide roles y ownership
+    const created = await eventService.createEvent(req.body, req.user);
     return res.status(201).json(created);
   } catch (err) {
     if (err.code === 'VALIDATION_ERROR') {
@@ -18,13 +19,15 @@ async function createEvent(req, res, next) {
 
 async function listEvents(req, res, next) {
   try {
-    const { search, category, page, limit } = req.query;
+    // Normalizamos nombres de parámetros de consulta
+    const { search, category, page, limit, pageSize, categoryId } = req.query;
 
     const result = await eventService.listEvents({
       search,
-      category,
+      // preferimos categoryId explícito, de lo contrario usamos category
+      categoryId: categoryId || category,
       page: page ? Number(page) : undefined,
-      limit: limit ? Number(limit) : undefined
+      pageSize: pageSize ? Number(pageSize) : (limit ? Number(limit) : undefined),
     });
 
     return res.status(200).json(result);
