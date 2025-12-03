@@ -46,10 +46,10 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          cache-dependency-path: eventos-backend/eventos-backend/package-lock.json
+          cache-dependency-path: eventos-backend/package-lock.json
 
       - name: Install backend dependencies
-        working-directory: ./eventos-backend/eventos-backend
+        working-directory: ./eventos-backend
         run: npm ci
 
       - name: Esperar PostgreSQL
@@ -61,5 +61,5 @@ jobs:
           done
 
       - name: Run Jest with coverage
-        working-directory: ./eventos-backend/eventos-backend
+        working-directory: ./eventos-backend
         run: npm test -- --coverage
