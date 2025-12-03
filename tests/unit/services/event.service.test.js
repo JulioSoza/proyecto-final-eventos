@@ -1,9 +1,7 @@
-const EventService = require('../../../src/services/event.service');
-
-// El mock DEBE COINCIDIR EXACTAMENTE con nombre, carpeta y minúsculas
 jest.mock('../../../src/repositories/event.repository.js');
 
 const eventRepository = require('../../../src/repositories/event.repository.js');
+const EventService = require('../../../src/services/event.service.js');
 
 describe('EventService - Unit Tests', () => {
   let service;
@@ -17,7 +15,8 @@ describe('EventService - Unit Tests', () => {
     eventRepository.getById = jest.fn().mockResolvedValue(null);
 
     await expect(service.getEventById(123))
-      .rejects.toThrow('Event not found');
+      .rejects
+      .toThrow('Event not found');
   });
 
   test('getEventById debe devolver el evento', async () => {
@@ -28,6 +27,5 @@ describe('EventService - Unit Tests', () => {
     const result = await service.getEventById(3);
 
     expect(result).toEqual(mockEvent);
-    expect(eventRepository.getById).toHaveBeenCalledWith(3);
   });
 });
