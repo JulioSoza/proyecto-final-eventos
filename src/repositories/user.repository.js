@@ -1,14 +1,14 @@
 // src/repositories/user.repository.js
 const { pool } = require('../db/pool');
 
-// Mapea columnas de la BD a propiedades que usa la app
+// Mapea columnas de la BD a propiedades internas de la app
 function mapUser(row) {
   if (!row) return null;
   return {
     id: row.id,
     name: row.name,
     email: row.email,
-    password: row.password_hash, // AuthService espera "password"
+    passwordHash: row.password_hash, // <- corregido
     role: row.role,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
