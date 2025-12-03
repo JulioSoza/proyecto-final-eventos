@@ -38,21 +38,21 @@ jobs:
       PGDATABASE: eventos_db
 
     steps:
-      - name: Checkout del código
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
           cache-dependency-path: eventos-backend/package-lock.json
 
-      - name: Instalar dependencias del backend
+      - name: Install backend dependencies
         working-directory: ./eventos-backend
         run: npm ci
 
-      - name: Esperar a que PostgreSQL esté listo
+      - name: Esperar PostgreSQL
         run: |
           echo "Esperando Postgres..."
           for i in {1..10}; do
@@ -60,6 +60,11 @@ jobs:
             sleep 2
           done
 
-      - name: Ejecutar tests con coverage (usando jest.config.cjs)
+      - name: Run Jest with correct config
         working-directory: ./eventos-backend
-        run: npx jest --config jest.config.cjs --runInBand --detectOpenHandles --coverage
+        run: |
+          npx jest \
+            --config jest.config.cjs \
+            --runInBand \
+            --detectOpenHandles \
+            --coverage
