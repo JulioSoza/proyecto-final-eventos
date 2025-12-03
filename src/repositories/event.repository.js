@@ -1,5 +1,5 @@
 // src/repositories/event.repository.js
-const { pool } = require('../../../src/db/pool');
+const { pool } = require('../db/pool');
 
 function mapEvent(row) {
   if (!row) return null;
@@ -54,7 +54,7 @@ async function createEvent(data) {
     )
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     RETURNING *
-  `,
+    `,
     [
       title,
       description,
@@ -81,12 +81,10 @@ async function getEventById(id) {
   return mapEvent(res.rows[0]);
 }
 
-// Lista de eventos con filtros y paginación
 async function listEvents({ search, categoryId, page = 1, pageSize = 10 } = {}) {
   const params = [];
   const where = [];
 
-  // Por defecto, solo eventos publicados
   where.push('is_published = TRUE');
 
   if (search) {
@@ -103,18 +101,16 @@ async function listEvents({ search, categoryId, page = 1, pageSize = 10 } = {}) 
 
   const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-  const pageNum = Number(page) || 1;
-  const sizeNum = Number(pageSize) || 10;
+  const pageNum = Number(page);
+  const sizeNum = Number(pageSize);
   const offset = (pageNum - 1) * sizeNum;
 
-  // total
   const countRes = await pool.query(
     `SELECT COUNT(*) AS total FROM events ${whereClause}`,
     params
   );
   const total = Number(countRes.rows[0].total);
 
-  // datos
   params.push(sizeNum);
   params.push(offset);
 
@@ -125,7 +121,7 @@ async function listEvents({ search, categoryId, page = 1, pageSize = 10 } = {}) 
     ${whereClause}
     ORDER BY start_date ASC
     LIMIT $${params.length - 1} OFFSET $${params.length}
-  `,
+    `,
     params
   );
 
@@ -136,7 +132,7 @@ async function listEvents({ search, categoryId, page = 1, pageSize = 10 } = {}) 
     total,
     page: pageNum,
     pageSize: sizeNum,
-    totalPages: Math.ceil(total / sizeNum) || 1,
+    totalPages: Math.ceil(total / sizeNum),
   };
 }
 
@@ -160,15 +156,13 @@ async function updateEvent(id, data) {
 
   for (const [key, column] of Object.entries(mapping)) {
     if (data[key] !== undefined) {
-      fields.push(`${column} = $${idx++}`);
+      fields.push(`${column} = $${idx}`);
       params.push(data[key]);
+      idx++;
     }
   }
 
-  if (!fields.length) {
-    const existing = await getEventById(id);
-    return existing;
-  }
+  if (!fields.length) return getEventById(id);
 
   params.push(id);
 
@@ -178,7 +172,7 @@ async function updateEvent(id, data) {
     SET ${fields.join(', ')}, updated_at = NOW()
     WHERE id = $${idx}
     RETURNING *
-  `,
+    `,
     params
   );
 
