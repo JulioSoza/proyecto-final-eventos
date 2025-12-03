@@ -12,6 +12,7 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
 
+    # Todos los comandos (npm ci, npm test, etc.) se ejecutan dentro de /eventos-backend
     defaults:
       run:
         working-directory: eventos-backend
@@ -24,7 +25,7 @@ jobs:
           POSTGRES_PASSWORD: eventos_app_pass
           POSTGRES_DB: eventos_db
         ports:
-          - 5432:5432
+          - "5432:5432"
         options: >-
           --health-cmd="pg_isready -U eventos_app_user -d eventos_db"
           --health-interval=10s
@@ -34,6 +35,15 @@ jobs:
     env:
       NODE_ENV: test
       JWT_SECRET: super-secret-ci
+
+      # Variables que realmente usa tu pool.js
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: eventos_app_user
+      DB_PASSWORD: eventos_app_pass
+      DB_NAME: eventos_db
+
+      # Extra (por si tu pool también mira las PG*)
       PGHOST: localhost
       PGPORT: 5432
       PGUSER: eventos_app_user
@@ -51,16 +61,16 @@ jobs:
           cache: npm
           cache-dependency-path: eventos-backend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install backend deps
         run: npm ci
 
       - name: Wait for PostgreSQL
         run: |
           echo "Esperando a que Postgres esté listo..."
           for i in {1..10}; do
-            pg_isready -h localhost -p 5432 -U eventos_app_user && break
+            pg_isready -h localhost -p 5432 -U eventos_app_user -d eventos_db && break
             sleep 2
           done
 
-      - name: Run Jest with coverage
+      - name: Run tests with coverage
         run: npm test -- --coverage
