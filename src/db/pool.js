@@ -3,21 +3,27 @@ const { Pool } = require('pg');
 
 console.log('>>> Cargando pool desde:', __filename);
 
-const config = {
-  host: process.env.PGHOST || '127.0.0.1',
-  port: Number(process.env.PGPORT || 15432),
-  user: process.env.PGUSER || 'eventos_app_user',
-  password: process.env.PGPASSWORD || 'eventos_app_pass',
-  database: process.env.PGDATABASE || 'eventos_db',
-};
+// Si existe DATABASE_URL (CI / producción), úsala primero
+let poolConfig;
 
-console.log('PG config (direct):', {
-  host: config.host,
-  port: config.port,
-  user: config.user,
-  database: config.database,
-});
+if (process.env.DATABASE_URL) {
+  console.log('Usando DATABASE_URL para conexión PG');
+  poolConfig = {
+    connectionString: process.env.DATABASE_URL,
+  };
+} else {
+  console.log('Usando configuración local para conexión PG');
+  poolConfig = {
+    host: process.env.PGHOST || '127.0.0.1',
+    port: Number(process.env.PGPORT || 5432),
+    user: process.env.PGUSER || 'eventos_app_user',
+    password: process.env.PGPASSWORD || 'eventos_app_pass',
+    database: process.env.PGDATABASE || 'eventos_db',
+  };
+}
 
-const pool = new Pool(config);
+console.log('PG config final:', poolConfig);
+
+const pool = new Pool(poolConfig);
 
 module.exports = { pool };
