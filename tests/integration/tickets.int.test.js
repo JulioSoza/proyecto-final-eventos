@@ -5,33 +5,24 @@ const { pool } = require('../../src/db/pool');
 const { resetDatabase, closePool } = require('../helpers/db');
 
 // ---------------------------------------------------------------------------
-// FIX IMPORTANTE:
-// Agregamos name en los INSERT porque tu tabla users lo exige (NOT NULL).
+// HELPERS
 // ---------------------------------------------------------------------------
 
-async function createBasicUser() {
-  const res = await pool.query(
-    `INSERT INTO users (name, email, password_hash, role)
-     VALUES ('Test User', 'user@example.com', 'hash', 'USER')
-     RETURNING id, email, role;`
-  );
-  return res.rows[0];
-}
-
-async function createBasicUserAndToken() {
-  // Registrar vía API
-  const email = 'user2@example.com';
+async function createUserAndToken(role = 'USER') {
+  const email = `${role.toLowerCase()}_${Date.now()}@test.com`;
   const password = '123456';
 
+  // Registramos vía API
   await request(app)
     .post('/api/auth/register')
     .send({
-      name: 'User Two',
+      name: 'Test User',
       email,
       password,
-      role: 'USER',
+      role,
     });
 
+  // Login
   const login = await request(app)
     .post('/api/auth/login')
     .send({ email, password });
@@ -42,15 +33,22 @@ async function createBasicUserAndToken() {
   };
 }
 
+async function promoteTo(role, email) {
+  await pool.query(`UPDATE users SET role = $1 WHERE email = $2`, [
+    role,
+    email,
+  ]);
+}
+
 async function createOrganizerAndToken() {
-  const email = 'buyer@test.com';
+  const email = `org_${Date.now()}@test.com`;
   const password = '123456';
 
-  // registrar usuario
+  // registrar
   await request(app)
     .post('/api/auth/register')
     .send({
-      name: 'Buyer Test',
+      name: 'Organizer',
       email,
       password,
       role: 'USER',
@@ -75,13 +73,13 @@ async function createOrganizerAndToken() {
 
 async function createEvent(token, overrides = {}) {
   const payload = {
-    title: 'Evento para tickets',
-    description: 'Test de tickets',
-    location: 'Ciudad de Guatemala',
+    title: 'Evento test compra',
+    description: 'Test tickets',
+    location: 'Guatemala',
     startDate: '2030-01-01T20:00:00.000Z',
     endDate: '2030-01-02T02:00:00.000Z',
-    capacity: 2,
-    price: 250.5,
+    capacity: 5,
+    price: 100,
     isPublished: true,
     ...overrides,
   };
@@ -94,6 +92,10 @@ async function createEvent(token, overrides = {}) {
   return res.body;
 }
 
+// ---------------------------------------------------------------------------
+// TEST SUITE
+// ---------------------------------------------------------------------------
+
 describe('Tickets API - integración', () => {
   beforeEach(async () => {
     await resetDatabase();
@@ -104,9 +106,9 @@ describe('Tickets API - integración', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // TEST 1
+  // 1) Compra exitosa
   // ---------------------------------------------------------------------------
-  test('compra ticket (201) crea ticket y reduce capacidad del evento', async () => {
+  test('compra ticket (201) crea ticket y reduce capacidad', async () => {
     const { token, userId } = await createOrganizerAndToken();
     const event = await createEvent(token, { capacity: 5, price: 100 });
 
@@ -120,26 +122,26 @@ describe('Tickets API - integración', () => {
 
     expect(res.statusCode).toBe(201);
     expect(res.body.ticket).toBeDefined();
-    expect(res.body.ticket.quantity).toBe(2);
     expect(res.body.ticket.eventId).toBe(event.id);
     expect(res.body.ticket.userId).toBe(userId);
-    expect(res.body.ticket.total).toBeCloseTo(200); // 100 * 2
+    expect(res.body.ticket.quantity).toBe(2);
+    expect(res.body.ticket.total).toBeCloseTo(200);
 
-    const capacityRes = await pool.query(
+    const cap = await pool.query(
       'SELECT capacity FROM events WHERE id = $1',
       [event.id]
     );
-    expect(capacityRes.rows[0].capacity).toBe(3);
+    expect(cap.rows[0].capacity).toBe(3);
   });
 
   // ---------------------------------------------------------------------------
-  // TEST 2
+  // 2) 401 sin token
   // ---------------------------------------------------------------------------
-  test('rechaza compra sin token con 401', async () => {
+  test('rechaza compra sin token (401)', async () => {
     const res = await request(app)
       .post('/api/tickets/purchase')
       .send({
-        eventId: 999,
+        eventId: 1,
         quantity: 1,
       });
 
@@ -147,9 +149,9 @@ describe('Tickets API - integración', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // TEST 3
+  // 3) 409 sin capacidad suficiente
   // ---------------------------------------------------------------------------
-  test('rechaza compra cuando no hay capacidad suficiente con 409', async () => {
+  test('rechaza compra sin capacidad suficiente (409)', async () => {
     const { token } = await createOrganizerAndToken();
     const event = await createEvent(token, { capacity: 1, price: 50 });
 
@@ -158,9 +160,78 @@ describe('Tickets API - integración', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({
         eventId: event.id,
-        quantity: 2, // más de la capacidad
+        quantity: 2,
       });
 
     expect(res.statusCode).toBe(409);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 4) 404 evento no existe
+  // ---------------------------------------------------------------------------
+  test('compra con eventId inexistente devuelve 404', async () => {
+    const { token } = await createOrganizerAndToken();
+
+    const res = await request(app)
+      .post('/api/tickets/purchase')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        eventId: 999999,
+        quantity: 1,
+      });
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 5) quantity inválido → 400
+  // ---------------------------------------------------------------------------
+  test('rechaza quantity inválido (400)', async () => {
+    const { token } = await createOrganizerAndToken();
+    const event = await createEvent(token);
+
+    const res = await request(app)
+      .post('/api/tickets/purchase')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        eventId: event.id,
+        quantity: 0, // inválido
+      });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 6) GET /api/tickets/my devuelve sólo del usuario autenticado
+  // ---------------------------------------------------------------------------
+  test('GET /api/tickets/my devuelve los tickets del usuario (200)', async () => {
+    const { token, userId } = await createOrganizerAndToken();
+    const event = await createEvent(token);
+
+    // compra
+    await request(app)
+      .post('/api/tickets/purchase')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        eventId: event.id,
+        quantity: 1,
+      });
+
+    const res = await request(app)
+      .get('/api/tickets/my')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body.items)).toBe(true);
+    expect(res.body.items.length).toBe(1);
+    expect(res.body.items[0].userId).toBe(userId);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 7) GET /api/tickets/my sin token → 401
+  // ---------------------------------------------------------------------------
+  test('GET /api/tickets/my sin token devuelve 401', async () => {
+    const res = await request(app).get('/api/tickets/my');
+    expect(res.statusCode).toBe(401);
   });
 });

@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const protectedRoutes = require('./routes/protected.routes');
 const eventsRoutes = require('./routes/events.routes');
 const ticketsRoutes = require('./routes/tickets.routes');
+const categoriesRoutes = require('./routes/categories.routes'); // Importar rutas de categorías
 const errorMiddleware = require('./middlewares/error.middleware');
 
 const app = express();
@@ -26,6 +27,7 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 // 4) Rutas públicas
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventsRoutes);
+app.use('/api/categories', categoriesRoutes); // Registrar las rutas de categorías
 
 // 5) Rutas protegidas
 app.use('/api/protected', protectedRoutes);
