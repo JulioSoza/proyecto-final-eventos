@@ -12,7 +12,7 @@ describe('EventService - Unit Tests', () => {
   });
 
   test('getEventById debe fallar si no existe', async () => {
-    eventRepository.getById = jest.fn().mockResolvedValue(null);
+    eventRepository.getEventById = jest.fn().mockResolvedValue(null);
 
     await expect(service.getEventById(123))
       .rejects
@@ -22,7 +22,7 @@ describe('EventService - Unit Tests', () => {
   test('getEventById debe devolver el evento', async () => {
     const mockEvent = { id: 3, title: 'Evento Test' };
 
-    eventRepository.getById = jest.fn().mockResolvedValue(mockEvent);
+    eventRepository.getEventById = jest.fn().mockResolvedValue(mockEvent);
 
     const result = await service.getEventById(3);
 
