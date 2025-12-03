@@ -15,18 +15,13 @@ function mapTicket(row) {
   };
 }
 
-// Compra de ticket con transacción:
-// - bloquea el evento
-// - valida capacidad
-// - inserta ticket
-// - reduce capacity del evento
+// Compra de ticket con transacción
 async function purchaseTicket({ userId, eventId, quantity }) {
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    // 1) Obtenemos el evento y bloqueamos la fila
     const eventRes = await client.query(
       `
       SELECT id, title, capacity, price
@@ -54,7 +49,6 @@ async function purchaseTicket({ userId, eventId, quantity }) {
     const unitPrice = Number(event.price);
     const total = unitPrice * quantity;
 
-    // 2) Insertamos el ticket
     const ticketRes = await client.query(
       `
       INSERT INTO tickets (quantity, unit_price, total, user_id, event_id)
@@ -66,7 +60,6 @@ async function purchaseTicket({ userId, eventId, quantity }) {
 
     const ticket = mapTicket(ticketRes.rows[0]);
 
-    // 3) Reducimos capacidad
     const eventUpdateRes = await client.query(
       `
       UPDATE events
@@ -91,7 +84,7 @@ async function purchaseTicket({ userId, eventId, quantity }) {
   }
 }
 
-// Listar tickets de un usuario
+// Listar tickets del usuario
 async function listTicketsByUser(userId) {
   const res = await pool.query(
     `

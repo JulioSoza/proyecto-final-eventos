@@ -81,10 +81,12 @@ async function getEventById(id) {
   return mapEvent(res.rows[0]);
 }
 
+// Lista de eventos con filtros y paginación
 async function listEvents({ search, categoryId, page = 1, pageSize = 10 } = {}) {
   const params = [];
   const where = [];
 
+  // Solo eventos publicados por defecto
   where.push('is_published = TRUE');
 
   if (search) {
@@ -101,16 +103,18 @@ async function listEvents({ search, categoryId, page = 1, pageSize = 10 } = {}) 
 
   const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
-  const pageNum = Number(page);
-  const sizeNum = Number(pageSize);
+  const pageNum = Number(page) || 1;
+  const sizeNum = Number(pageSize) || 10;
   const offset = (pageNum - 1) * sizeNum;
 
+  // total
   const countRes = await pool.query(
     `SELECT COUNT(*) AS total FROM events ${whereClause}`,
     params
   );
   const total = Number(countRes.rows[0].total);
 
+  // datos
   params.push(sizeNum);
   params.push(offset);
 
@@ -132,7 +136,7 @@ async function listEvents({ search, categoryId, page = 1, pageSize = 10 } = {}) 
     total,
     page: pageNum,
     pageSize: sizeNum,
-    totalPages: Math.ceil(total / sizeNum),
+    totalPages: Math.ceil(total / sizeNum) || 1,
   };
 }
 
@@ -156,13 +160,15 @@ async function updateEvent(id, data) {
 
   for (const [key, column] of Object.entries(mapping)) {
     if (data[key] !== undefined) {
-      fields.push(`${column} = $${idx}`);
+      fields.push(`${column} = $${idx++}`);
       params.push(data[key]);
-      idx++;
     }
   }
 
-  if (!fields.length) return getEventById(id);
+  if (!fields.length) {
+    const existing = await getEventById(id);
+    return existing;
+  }
 
   params.push(id);
 

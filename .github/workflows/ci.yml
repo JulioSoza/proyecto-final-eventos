@@ -29,7 +29,11 @@ jobs:
 
     env:
       NODE_ENV: test
-      DATABASE_URL: "postgresql://eventos_app_user:eventos_app_pass@localhost:5432/eventos_db?schema=public"
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: eventos_app_user
+      PGPASSWORD: eventos_app_pass
+      PGDATABASE: eventos_db
       JWT_SECRET: super-secret-ci
 
     steps:
@@ -46,8 +50,16 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Push Prisma schema
-        run: npx prisma db push
+      - name: Esperar a Postgres
+        run: |
+          echo "Esperando Postgres..."
+          for i in {1..10}; do
+            pg_isready -h localhost -p 5432 -U eventos_app_user && break
+            sleep 2
+          done
+
+      - name: Inicializar esquema de BD
+        run: node scripts/init-db.js
 
       - name: Run tests with coverage
         run: npm test -- --coverage
