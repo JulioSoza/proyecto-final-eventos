@@ -12,11 +12,6 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
 
-    # Todos los comandos se ejecutan dentro de eventos-backend
-    defaults:
-      run:
-        working-directory: ./eventos-backend
-
     services:
       postgres:
         image: postgres:16
@@ -28,22 +23,14 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd="pg_isready -U eventos_app_user -d eventos_db"
-          --health-interval=10s
+          --health-interval=5s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     env:
       NODE_ENV: test
+      DATABASE_URL: "postgresql://eventos_app_user:eventos_app_pass@localhost:5432/eventos_db?schema=public"
       JWT_SECRET: super-secret-ci
-
-      PGHOST: 127.0.0.1
-      PGPORT: 5432
-      PGUSER: eventos_app_user
-      PGPASSWORD: eventos_app_pass
-      PGDATABASE: eventos_db
-
-      # Prisma usará este connection string para crear las tablas
-      DATABASE_URL: postgresql://eventos_app_user:eventos_app_pass@127.0.0.1:5432/eventos_db
 
     steps:
       - name: Checkout repo
@@ -54,20 +41,13 @@ jobs:
         with:
           node-version: 18
           cache: npm
-          cache-dependency-path: eventos-backend/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Esperar PostgreSQL
-        run: |
-          echo "Esperando Postgres..."
-          for i in {1..15}; do
-            pg_isready -h 127.0.0.1 -p 5432 -U eventos_app_user && break
-            sleep 2
-          done
+      - name: Install deps
+        run: npm ci
 
-      # *** PASO CLAVE ***
-      # Crea el esquema de la BD (tablas tickets, events, users, categories, etc.)
-      - name: Sincronizar esquema con Prisma
+      - name: Push Prisma schema
         run: npx prisma db push
 
-      - name: Run Jest with coverage
+      - name: Run tests with coverage
         run: npm test -- --coverage
