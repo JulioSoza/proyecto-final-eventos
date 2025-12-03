@@ -1,7 +1,9 @@
 const EventService = require('../../../src/services/event.service');
-const eventRepository = require('../../../src/repositories/event.repository');
 
-jest.mock('../../../src/repositories/event.repository');
+// El mock DEBE COINCIDIR EXACTAMENTE con nombre, carpeta y minúsculas
+jest.mock('../../../src/repositories/event.repository.js');
+
+const eventRepository = require('../../../src/repositories/event.repository.js');
 
 describe('EventService - Unit Tests', () => {
   let service;
@@ -12,7 +14,7 @@ describe('EventService - Unit Tests', () => {
   });
 
   test('getEventById debe fallar si no existe', async () => {
-    eventRepository.getById.mockResolvedValue(null);
+    eventRepository.getById = jest.fn().mockResolvedValue(null);
 
     await expect(service.getEventById(123))
       .rejects.toThrow('Event not found');
@@ -20,7 +22,8 @@ describe('EventService - Unit Tests', () => {
 
   test('getEventById debe devolver el evento', async () => {
     const mockEvent = { id: 3, title: 'Evento Test' };
-    eventRepository.getById.mockResolvedValue(mockEvent);
+
+    eventRepository.getById = jest.fn().mockResolvedValue(mockEvent);
 
     const result = await service.getEventById(3);
 
