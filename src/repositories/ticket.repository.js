@@ -1,5 +1,5 @@
 // src/repositories/ticket.repository.js
-const { pool } = require('../../../src/db/pool');
+const { pool } = require('../db/pool');
 
 function mapTicket(row) {
   if (!row) return null;
@@ -33,7 +33,7 @@ async function purchaseTicket({ userId, eventId, quantity }) {
       FROM events
       WHERE id = $1
       FOR UPDATE
-    `,
+      `,
       [eventId]
     );
 
@@ -60,13 +60,13 @@ async function purchaseTicket({ userId, eventId, quantity }) {
       INSERT INTO tickets (quantity, unit_price, total, user_id, event_id)
       VALUES ($1, $2, $3, $4, $5)
       RETURNING id, quantity, unit_price, total, user_id, event_id, created_at
-    `,
+      `,
       [quantity, unitPrice, total, userId, eventId]
     );
 
     const ticket = mapTicket(ticketRes.rows[0]);
 
-    // 3) Actualizamos la capacidad del evento
+    // 3) Reducimos capacidad
     const eventUpdateRes = await client.query(
       `
       UPDATE events
@@ -74,7 +74,7 @@ async function purchaseTicket({ userId, eventId, quantity }) {
           updated_at = NOW()
       WHERE id = $2
       RETURNING id, title, capacity, price
-    `,
+      `,
       [quantity, eventId]
     );
 
@@ -91,7 +91,7 @@ async function purchaseTicket({ userId, eventId, quantity }) {
   }
 }
 
-// Listar tickets del usuario
+// Listar tickets de un usuario
 async function listTicketsByUser(userId) {
   const res = await pool.query(
     `
@@ -110,7 +110,7 @@ async function listTicketsByUser(userId) {
     JOIN events e ON e.id = t.event_id
     WHERE t.user_id = $1
     ORDER BY t.created_at DESC
-  `,
+    `,
     [userId]
   );
 
