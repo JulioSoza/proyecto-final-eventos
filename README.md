@@ -1,81 +1,63 @@
-Proyecto Final – Plataforma de Eventos y Venta de Boletos
+Este proyecto es el resultado de tu trabajo final para la asignatura y combina un API REST hecho con Node.js/Express y una aplicación web construida con React/Vite. La solución permite administrar eventos, vender boletos y gestionar usuarios con roles diferenciados.
 
-El proyecto incluye backend con Node/Express, frontend con React/Vite, base de datos PostgreSQL en Docker, autenticación con JWT, paginación, filtrados y pruebas unitarias e integración con cobertura mínima del 80%.
+Descripción general
 
-🚀 Tecnologías principales
-Backend
-Node.js + Express 5
-PostgreSQL (Docker)
-pg (Pool)
-JWT (autenticación)
-Bcrypt (password hashing)
-Jest + Supertest (tests unitarios e integración)
-Docker Compose
-Arquitectura por capas (routes → controllers → services → repositories)
+El repositorio se divide en dos carpetas principales:
 
-Frontend
-React + Vite
-React Router
-Context API (autenticación global)
-Fetch/Axios API Client
-UI con estilos propios (tema oscuro)
-DevOps
-GitHub Actions
-Coverage con Jest (--coverage)
-CI/CD simple para validar builds y pruebas
+Carpeta	Descripción
+eventos‑backend/	Código del API REST en Node.js/Express con PostgreSQL.
+frontend/	Aplicación web en React/Vite que consume el API.
+Funcionalidades principales
 
-proyecto-final-eventos/
-│
-├── eventos-backend/        # API REST (Node + Express + PostgreSQL)
-│   ├── src/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   ├── repositories/
-│   │   ├── middlewares/
-│   │   ├── utils/
-│   │   ├── app.js
-│   │   └── server.js
-│   ├── tests/
-│   ├── prisma/
-│   ├── jest.config.cjs
-│   ├── docker-compose.yml
-│   └── package.json
-│
-├── frontend/               # React + Vite
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── components/
-│   │   ├── api/
-│   │   ├── context/
-│   │   └── App.jsx
-│   ├── package.json
-│   └── vite.config.js
-│
-└── README.md
+Registro e inicio de sesión: los usuarios se registran y autentican mediante JSON Web Tokens (JWT). Los tokens y datos del usuario se guardan en localStorage para mantener la sesión en el navegador.
 
+Listado de eventos: la página principal consulta /api/events y muestra eventos en una grilla con búsqueda y paginación
+raw.githubusercontent.com
+. Los visitantes pueden filtrar por título o descripción y navegar entre páginas
+raw.githubusercontent.com
+. Cada tarjeta muestra el título, descripción, ubicación, fecha, precio y la capacidad restante
+raw.githubusercontent.com
+.
 
-⚙️ Requisitos previos
+Compra de boletos: los usuarios autenticados pueden comprar un ticket directamente desde la lista o desde la vista de detalle. Si no hay sesión iniciada, se muestra un mensaje de error; de lo contrario, se realiza una petición POST a /tickets/purchase con el eventId y la cantidad
+raw.githubusercontent.com
+. La respuesta actualiza el mensaje de confirmación o muestra errores de capacidad o autenticación
+raw.githubusercontent.com
+.
 
-Asegúrate de tener instalados:
-Node.js 18+
-Docker + Docker Compose
-Git
-PostgreSQL (solo si no usas Docker)
+Detalle de evento: permite ver la información completa de un evento. Se carga llamando a /events/:id y muestra la ubicación, categoría, capacidad total y disponible, precio y fecha. Desde esta vista también es posible comprar boletos
+raw.githubusercontent.com
+.
 
-🐳 Levantar el backend con Docker
-El backend usa Docker para la base de datos.
-Desde la carpeta eventos-backend/:
+Gestión administrativa de eventos: los usuarios con rol admin disponen de un panel donde pueden crear nuevos eventos. Este panel valida que el usuario tenga rol admin y que se completen campos como título, descripción, fecha, capacidad y precio
+raw.githubusercontent.com
+. Al guardar, se envía una petición POST a /events que crea el nuevo registro y actualiza la lista
+raw.githubusercontent.com
+.
+
+Mis boletos: cada usuario autenticado puede consultar sus tickets comprados. Se realiza una petición GET a /tickets/my y se muestran los eventos, cantidades, fecha de compra y total pagado.
+
+Roles y seguridad: las rutas protegidas requieren token. Si no se envía el token se devuelve HTTP 401 y si el rol no tiene permiso se devuelve HTTP 403
+raw.githubusercontent.com
+. La capa de servicios del backend valida autenticación, roles y datos obligatorios; por ejemplo, EventService impide crear o modificar eventos sin usuario autenticado o con rol distinto de organizer/admin
+raw.githubusercontent.com
+ y valida que la capacidad sea positiva
+raw.githubusercontent.com
+.
+
+Pruebas unitarias e integración: el backend incluye un conjunto completo de tests con Jest y Supertest. Para cumplir con las métricas de calidad se mantiene un umbral global mínimo de 80 % de coverage en declaraciones y 70 % en ramas. El workflow de GitHub Actions ejecuta estos tests en cada push y reporta la cobertura.
+
+Instalación y puesta en marcha del backend
+
+1.Prerequisitos. Asegúrate de tener instalado Node.js 18 o superior, Docker Compose y Git. Si prefieres gestionar tu propia base de datos puedes instalar PostgreSQL localmente, pero se recomienda usar Docker.
+
+2. Arrancar la base de datos con Docker. Desde la carpeta eventos‑backend/ ejecuta:
 
 docker compose up -d
 
-Esto levanta PostgreSQL en:
-host: localhost
-puerto: 15432
-base de datos: eventos_db
+Esto levanta un contenedor PostgreSQL accesible en localhost:15432 con la base de datos eventos_db
 
-🔧 Variables de entorno (backend)
-
-Crea un archivo .env dentro de eventos-backend/:
+3. Configurar variables de entorno. Crea un archivo .env en eventos‑backend/ con el siguiente contenido (puedes ajustar las credenciales a tus necesidades):
 
 PORT=3000
 DATABASE_HOST=localhost
@@ -87,83 +69,76 @@ DATABASE_NAME=eventos_db
 JWT_SECRET=supersecreto
 JWT_EXPIRES_IN=1h
 
-▶️ Iniciar el backend
+4. Instalar dependencias y correr el servidor. Ejecuta los comandos:
 
-Dentro de eventos-backend/:
+cd eventos-backend
 npm install
 npm run dev
 
-Servidor en: http://localhost:3000
+La API estará disponible en http://localhost:3000
 
-🧪 Ejecutar pruebas y cobertura
+5. Ejecutar pruebas. Para correr todos los tests ejecuta:
 
-El backend incluye tests unitarios y de integración con cobertura >80%.
 npm test
 
-Con cobertura: npm test -- --coverage
+Para ver el reporte de cobertura usa:
 
-🤖 GitHub Actions (CI/CD)
-El proyecto incluye un workflow que ejecuta automáticamente:
-Instalación de dependencias
-Pruebas unitarias y de integración
-Reporte de cobertura
-En .github/workflows/.
-Esto asegura que cualquier nuevo push mantiene la calidad del código.
+npm test -- --coverage
 
-🔐 Crear un usuario administrador (ADMIN)
+La configuración de Jest exige al menos 80 % en declaraciones y 70 % en ramas. Si deseas replicar el mismo entorno que GitHub Actions emplea para CI, utiliza el script npm run test:ci, que ejecuta Jest con cobertura y en modo banda.
 
-El sistema crea usuarios con rol USER por defecto.
-Para promover uno a ADMIN, usa este script: eventos-backend/scripts/promote-admin.js
+6. Promover un usuario a administrador. Al registrar usuarios mediante /auth/register el rol asignado por defecto es USER. Para otorgar privilegios de ADMIN ejecuta el script incluido:
 
-Ejecuta:node scripts/promote-admin.js
-Esto actualiza el usuario admin@example.com a rol ADMIN.
+node scripts/promote-admin.js
 
-🌐 Frontend – Inicio
+Instalación y puesta en marcha del frontend
 
-Dentro de frontend/: npm install
-npm run dev
+1. Instalar dependencias. Dentro de la carpeta frontend/ ejecuta:
+npm install
 
-http://localhost:5173
+2. Configurar el cliente. El cliente utiliza la variable VITE_API_URL para conectarse al backend. Crea un archivo .env en frontend/ con esta línea (ajusta el puerto si modificaste el backend):
+VITE_API_URL=http://localhost:3000
 
-📲 Funcionalidades del frontend
-✔ Login / Registro
+3. Correr la aplicación web. Ejecuta: npm run dev
 
-Token y usuario guardados en localStorage
+Vite abrirá la aplicación en http://localhost:5173 
+raw.githubusercontent.com
+. Desde ahí podrás navegar por todas las páginas.
 
-AuthContext sincroniza sesión global
+Resumen de endpoints principales
+Módulo	Ruta	Método	Descripción
+Auth	/api/auth/register	POST	Crea un usuario. Devuelve el usuario sin contraseña.
+	/api/auth/login	POST	Autentica y devuelve { token, user }.
+Eventos	/api/events	GET	Lista eventos con paginación y búsqueda (page, pageSize, search)
+raw.githubusercontent.com
+.
+	/api/events/:id	GET	Devuelve un evento específico.
+	/api/events	POST	Crea un evento (requiere rol ORGANIZER/ADMIN)
+raw.githubusercontent.com
+.
+	/api/events/:id	PUT	Actualiza un evento (solo organizador o admin)
+raw.githubusercontent.com
+.
+	/api/events/:id	DELETE	Elimina un evento (solo organizador o admin)
+raw.githubusercontent.com
+.
+Categorías	/api/categories	GET	Devuelve todas las categorías.
+	/api/categories	POST	Crea una categoría (solo admin).
+Tickets	/api/tickets/purchase	POST	Compra boletos (requiere token). Valida que eventId y quantity sean correctos
+raw.githubusercontent.com
+.
+	/api/tickets/my	GET	Lista los tickets del usuario autenticado.
 
-✔ Rutas protegidas
+  Los errores se devuelven con códigos HTTP estándar; por ejemplo, falta de token produce 401 Unauthorized, y rol incorrecto produce 403 Forbidden
 
-AdminEvents solo para ORGANIZER / ADMIN
+  El middleware de errores mapea códigos específicos (VALIDATION_ERROR, NOT_FOUND, etc.) a códigos HTTP adecuados.
 
-MyTickets para usuarios autenticados
+Consideraciones finales
 
-✔ Home
+La arquitectura utiliza un patrón de capas: las rutas se encargan de recibir las peticiones, delegan en controladores/servicios y estos utilizan repositorios para interactuar con la base de datos. Esto facilita el testeo y la reutilización de lógica. Por ejemplo, EventService.createEvent valida rol y campos necesarios antes de llamar al repositorio
 
-Lista de eventos desde /api/events
+La autenticación se implementa con JWT y un middleware (auth.middleware.js) que extrae el token del encabezado Authorization y carga el usuario en req.user. Otro middleware (role.middleware.js) verifica si el usuario posee alguno de los roles permitidos para la ruta.
 
-Filtros (búsqueda, categoría, precios)
+La UI está construida con componentes funcionales de React y utiliza useState y useEffect para gestionar estado y efectos secundarios. El contexto de autenticación se implementa en frontend/src/api/auth.js y Navbar.jsx, actualizando la interfaz cuando el usuario inicia o cierra sesión
 
-Paginación real
-
-✔ Detalle de evento
-
-Info individual
-
-Comprar ticket mediante /api/tickets/purchase
-
-📚 Resumen de la API
-🔑 Autenticación
-POST /api/auth/register
-POST /api/auth/login
-🎫 Tickets
-POST /api/tickets/purchase (requiere token)
-🎉 Eventos
-GET /api/events?page=&limit=&search=...
-GET /api/events/:id
-POST /api/events (ADMIN/ORGANIZER)
-👮 Roles y seguridad
-Sin token → 401 Unauthorized
-Rol incorrecto → 403 Forbidden
-
-
+Este proyecto incluye un flujo CI/CD con GitHub Actions. Cada push a la rama principal ejecuta la instalación, las pruebas y reporta cobertura. Así se asegura que el código permanezca estable y con cobertura mínima.
