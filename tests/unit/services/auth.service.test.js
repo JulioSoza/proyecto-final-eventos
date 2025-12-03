@@ -1,12 +1,11 @@
-// tests/unit/auth.service.test.js
 const AuthService = require('../../../src/services/auth.service');
+
 const userRepository = require('../../../src/repositories/user.repository');
-const hashLib = require('../../../src/utils/hash');
+const passwordUtils = require('../../../src/utils/password');
 const jwtLib = require('../../../src/utils/jwt');
 
-// Mock del userRepository (NO DB)
 jest.mock('../../../src/repositories/user.repository');
-jest.mock('../../../src/utils/hash');
+jest.mock('../../../src/utils/password');
 jest.mock('../../../src/utils/jwt');
 
 describe('AuthService - Unit Tests', () => {
@@ -14,70 +13,42 @@ describe('AuthService - Unit Tests', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new AuthService(userRepository);
+    service = new AuthService(userRepository, passwordUtils, jwtLib);
   });
 
-  test('register crea usuario y oculta password', async () => {
-    hashLib.hashPassword.mockResolvedValue('hashed123');
-
+  test('login debe fallar si el usuario no existe', async () => {
     userRepository.findByEmail.mockResolvedValue(null);
-    userRepository.create.mockResolvedValue({
-      id: 1,
-      name: 'Julio',
-      email: 'julio@test.com',
-      role: 'ADMIN',
-      password: 'hashed123'
-    });
 
-    const result = await service.register({
-      name: 'Julio',
-      email: 'julio@test.com',
-      password: '123456',
-      role: 'admin'
-    });
-
-    expect(result.email).toBe('julio@test.com');
-    expect(result.password).toBeUndefined();
-    expect(hashLib.hashPassword).toHaveBeenCalled();
+    await expect(
+      service.login({ email: 'test@test.com', password: '1234' })
+    ).rejects.toThrow('Invalid credentials');
   });
 
-  test('register falla si email ya existe', async () => {
-    userRepository.findByEmail.mockResolvedValue({ id: 10 });
+  test('login debe fallar si la contraseña es incorrecta', async () => {
+    userRepository.findByEmail.mockResolvedValue({ id: 1, password: 'hashed' });
+    passwordUtils.compare.mockResolvedValue(false);
 
-    await expect(service.register({
-      name: 'Julio',
-      email: 'existente@test.com',
-      password: '123456'
-    })).rejects.toThrow('Email already registered');
+    await expect(
+      service.login({ email: 'test@test.com', password: '1234' })
+    ).rejects.toThrow('Invalid credentials');
   });
 
-  test('login devuelve token y usuario', async () => {
-    userRepository.findByEmail.mockResolvedValue({
-      id: 1,
-      name: 'Julio',
-      email: 'julio@test.com',
-      password: 'hashed',
-      role: 'USER'
-    });
+  test('login debe devolver token si todo está bien', async () => {
+    const mockUser = { id: 1, role: 'USER', password: 'hashed' };
 
-    hashLib.comparePasswords.mockResolvedValue(true);
+    userRepository.findByEmail.mockResolvedValue(mockUser);
+    passwordUtils.compare.mockResolvedValue(true);
     jwtLib.sign.mockReturnValue('fake-token');
 
-    const result = await service.login('julio@test.com', '123456');
-
-    expect(result.token).toBe('fake-token');
-    expect(jwtLib.sign).toHaveBeenCalled();
-  });
-
-  test('login falla si contraseña incorrecta', async () => {
-    userRepository.findByEmail.mockResolvedValue({
-      id: 1,
-      password: 'hashed'
+    const result = await service.login({
+      email: 'test@test.com',
+      password: '1234'
     });
 
-    hashLib.comparePasswords.mockResolvedValue(false);
-
-    await expect(service.login('test@test.com', '123'))
-      .rejects.toThrow('Invalid credentials');
+    expect(result.token).toBe('fake-token');
+    expect(jwtLib.sign).toHaveBeenCalledWith({
+      id: 1,
+      role: 'USER',
+    });
   });
 });

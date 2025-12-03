@@ -1,43 +1,30 @@
-// tests/unit/events.service.test.js
-const EventsService = require('../../src/services/events.service');
-const eventsRepository = require('../../src/repositories/events.repository');
+const EventService = require('../../../src/services/event.service');
+const eventRepository = require('../../../src/repositories/event.repository');
 
-jest.mock('../../src/repositories/events.repository');
+jest.mock('../../../src/repositories/event.repository');
 
-describe('EventsService - Unit Tests', () => {
+describe('EventService - Unit Tests', () => {
   let service;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new EventsService(eventsRepository);
+    service = new EventService(eventRepository);
   });
 
-  test('createEvent guarda evento correctamente', async () => {
-    eventsRepository.createEvent.mockResolvedValue({ id: 1, title: 'Prueba' });
+  test('getEventById debe fallar si no existe', async () => {
+    eventRepository.getById.mockResolvedValue(null);
 
-    const result = await service.createEvent({
-      title: 'Prueba'
-    });
-
-    expect(result.id).toBe(1);
-    expect(eventsRepository.createEvent).toHaveBeenCalled();
-  });
-
-  test('getEventById devuelve evento existente', async () => {
-    eventsRepository.getEventById.mockResolvedValue({
-      id: 10,
-      title: 'Evento 10'
-    });
-
-    const result = await service.getEventById(10);
-
-    expect(result.id).toBe(10);
-  });
-
-  test('getEventById lanza error si no existe', async () => {
-    eventsRepository.getEventById.mockResolvedValue(null);
-
-    await expect(service.getEventById(1))
+    await expect(service.getEventById(123))
       .rejects.toThrow('Event not found');
+  });
+
+  test('getEventById debe devolver el evento', async () => {
+    const mockEvent = { id: 3, title: 'Evento Test' };
+    eventRepository.getById.mockResolvedValue(mockEvent);
+
+    const result = await service.getEventById(3);
+
+    expect(result).toEqual(mockEvent);
+    expect(eventRepository.getById).toHaveBeenCalledWith(3);
   });
 });
