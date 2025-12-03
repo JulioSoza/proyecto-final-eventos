@@ -1,52 +1,62 @@
-// FRONTEND - src/api/tickets.js
+// frontend/src/api/tickets.js
 import { api } from './client';
 
-const STORAGE_KEY = 'my_tickets';
-
-// Leer boletos guardados en localStorage
-function loadLocalTickets() {
+// Obtiene el token guardado en localStorage
+function getAuthToken() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    // Caso más común: guardamos todo en "auth"
+    const raw = localStorage.getItem('auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.token) return parsed.token;
+    }
   } catch (err) {
-    console.error('Error leyendo boletos de localStorage', err);
-    return [];
+    console.error('Error leyendo auth desde localStorage', err);
   }
+
+  // Plan B: token guardado directo
+  const token = localStorage.getItem('token');
+  return token || null;
 }
 
-// Guardar boletos en localStorage
-function saveLocalTickets(tickets) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tickets));
-  } catch (err) {
-    console.error('Error guardando boletos en localStorage', err);
-  }
-}
-
-// Comprar ticket: sigue llamando al backend,
-// pero además guarda el ticket en localStorage
+// Compra de ticket para un evento
 export async function buyTicket(eventId, quantity = 1) {
-  const res = await api.post('/tickets', {
-    eventId,
-    quantity
-  });
+  const token = getAuthToken();
 
-  const data = res.data; // { ticket, event }
+  if (!token) {
+    const error = new Error('No hay token de autenticación');
+    error.code = 'NO_TOKEN';
+    throw error;
+  }
 
-  const current = loadLocalTickets();
-  current.push({
-    ...data.ticket,
-    event: data.event
-  });
-  saveLocalTickets(current);
+  const res = await api.post(
+    '/tickets',
+    { eventId, quantity },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
-  return data;
+  return res.data;
 }
 
-// Obtener los boletos del usuario actual desde localStorage
+// (opcional) obtener tickets del usuario logueado
 export async function getMyTickets() {
-  // Lo dejamos async para no romper el código que lo usa
-  return loadLocalTickets();
+  const token = getAuthToken();
+
+  if (!token) {
+    const error = new Error('No hay token de autenticación');
+    error.code = 'NO_TOKEN';
+    throw error;
+  }
+
+  const res = await api.get('/tickets/me', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.data;
 }

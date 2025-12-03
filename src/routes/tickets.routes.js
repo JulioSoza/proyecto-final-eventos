@@ -20,7 +20,7 @@ function requireAuth(req, res, next) {
   }
 
   try {
-    const payload = jwtLib.verify(token);
+    const payload = jwtLib.verify(token); // { id, role, ... }
     req.user = payload;
     next();
   } catch (err) {
@@ -28,26 +28,25 @@ function requireAuth(req, res, next) {
   }
 }
 
-// POST /api/tickets/purchase  -> compra de tickets
-router.post('/purchase', requireAuth, async (req, res, next) => {
+// POST /api/tickets  -> compra de ticket
+router.post('/', requireAuth, async (req, res, next) => {
   try {
-    const result = await ticketService.purchase(req.body, req.user);
-    // result: { ticket, event }
-    res.status(201).json(result);
-  } catch (err) {
-    next(err);
-  }
-});
+    const { eventId, quantity } = req.body;
+    const userId = req.user.id;
 
-// GET /api/tickets/me  -> tickets del usuario autenticado
-router.get('/me', requireAuth, async (req, res, next) => {
-  try {
-    const tickets = await ticketService.listMyTickets(req.user);
-    res.json({ items: tickets, count: tickets.length });
+    const ticket = await ticketService.buyTicket({
+      eventId,
+      userId,
+      quantity: quantity || 1,
+    });
+
+    return res.status(201).json(ticket);
   } catch (err) {
+    if (err.code === 'NO_CAPACITY') {
+      return res.status(409).json({ error: err.message });
+    }
     next(err);
   }
 });
 
 module.exports = router;
-    

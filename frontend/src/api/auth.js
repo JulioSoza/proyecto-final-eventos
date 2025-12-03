@@ -1,26 +1,41 @@
-// FRONTEND - src/api/auth.js
+// frontend/src/api/auth.js
 import { api } from './client';
 
-// Login contra el backend
+const STORAGE_KEY = 'auth';
+
 export async function loginRequest(email, password) {
   const res = await api.post('/auth/login', { email, password });
-  return res.data; // { token, user }
+  const { token, user } = res.data; // { token, user: { id, name, email, role } }
+
+  const payload = { token, user };
+
+  // Guarda todo junto
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+
+  // Compatibilidad: algunos módulos leen solo "token"
+  localStorage.setItem('token', token);
+
+  return payload;
 }
 
-// Leer el usuario actual desde localStorage
-export function getCurrentUser() {
-  const raw = localStorage.getItem('user');
-  if (!raw) return null;
+export async function registerRequest({ name, email, password }) {
+  const res = await api.post('/auth/register', { name, email, password });
+  // El backend devuelve el usuario creado (sin password)
+  return res.data;
+}
 
+export function getCurrentUser() {
   try {
-    return JSON.parse(raw);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed.user || null;
   } catch {
     return null;
   }
 }
 
-// Cerrar sesión: borrar token y usuario
 export function logout() {
+  localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem('token');
-  localStorage.removeItem('user');
 }
