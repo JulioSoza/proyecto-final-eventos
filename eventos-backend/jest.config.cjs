@@ -3,9 +3,14 @@ module.exports = {
   testEnvironment: 'node',
   rootDir: '.',
   testMatch: ['**/tests/**/*.test.js'],
+
+  // Donde guardar el coverage
   coverageDirectory: 'coverage',
 
-  // Solo medimos coverage de las piezas "core" que ya probaste bien
+  // ACTIVAR coverage real
+  collectCoverage: true,
+
+  // Qué archivos se medirán
   collectCoverageFrom: [
     'src/middlewares/auth.middleware.js',
     'src/middlewares/role.middleware.js',
@@ -13,6 +18,7 @@ module.exports = {
     'src/utils/**/*.js',
   ],
 
+  // Umbral mínimo (80%)
   coverageThreshold: {
     global: {
       statements: 80,

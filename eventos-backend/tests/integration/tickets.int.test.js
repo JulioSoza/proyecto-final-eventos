@@ -4,26 +4,65 @@ const app = require('../../src/app');
 const { pool } = require('../../src/db/pool');
 const { resetDatabase, closePool } = require('../helpers/db');
 
+// ---------------------------------------------------------------------------
+// FIX IMPORTANTE:
+// Agregamos name en los INSERT porque tu tabla users lo exige (NOT NULL).
+// ---------------------------------------------------------------------------
+
+async function createBasicUser() {
+  const res = await pool.query(
+    `INSERT INTO users (name, email, password_hash, role)
+     VALUES ('Test User', 'user@example.com', 'hash', 'USER')
+     RETURNING id, email, role;`
+  );
+  return res.rows[0];
+}
+
+async function createBasicUserAndToken() {
+  // Registrar vía API
+  const email = 'user2@example.com';
+  const password = '123456';
+
+  await request(app)
+    .post('/api/auth/register')
+    .send({
+      name: 'User Two',
+      email,
+      password,
+      role: 'USER',
+    });
+
+  const login = await request(app)
+    .post('/api/auth/login')
+    .send({ email, password });
+
+  return {
+    token: login.body.token,
+    userId: login.body.user.id,
+  };
+}
+
 async function createOrganizerAndToken() {
   const email = 'buyer@test.com';
   const password = '123456';
 
-  // 1) Registrar usuario
+  // registrar usuario
   await request(app)
     .post('/api/auth/register')
     .send({
-      name: 'Buyer',
+      name: 'Buyer Test',
       email,
       password,
-      role: 'user',
+      role: 'USER',
     });
 
-  // 2) Subirlo a ORGANIZER en BD
-  await pool.query("UPDATE users SET role = 'ORGANIZER' WHERE email = $1", [
-    email,
-  ]);
+  // subirlo a organizer en BD
+  await pool.query(
+    "UPDATE users SET role = 'ORGANIZER' WHERE email = $1",
+    [email]
+  );
 
-  // 3) Login para obtener token
+  // login
   const loginRes = await request(app)
     .post('/api/auth/login')
     .send({ email, password });
@@ -64,6 +103,9 @@ describe('Tickets API - integración', () => {
     await closePool();
   });
 
+  // ---------------------------------------------------------------------------
+  // TEST 1
+  // ---------------------------------------------------------------------------
   test('compra ticket (201) crea ticket y reduce capacidad del evento', async () => {
     const { token, userId } = await createOrganizerAndToken();
     const event = await createEvent(token, { capacity: 5, price: 100 });
@@ -90,6 +132,9 @@ describe('Tickets API - integración', () => {
     expect(capacityRes.rows[0].capacity).toBe(3);
   });
 
+  // ---------------------------------------------------------------------------
+  // TEST 2
+  // ---------------------------------------------------------------------------
   test('rechaza compra sin token con 401', async () => {
     const res = await request(app)
       .post('/api/tickets/purchase')
@@ -101,6 +146,9 @@ describe('Tickets API - integración', () => {
     expect(res.statusCode).toBe(401);
   });
 
+  // ---------------------------------------------------------------------------
+  // TEST 3
+  // ---------------------------------------------------------------------------
   test('rechaza compra cuando no hay capacidad suficiente con 409', async () => {
     const { token } = await createOrganizerAndToken();
     const event = await createEvent(token, { capacity: 1, price: 50 });
