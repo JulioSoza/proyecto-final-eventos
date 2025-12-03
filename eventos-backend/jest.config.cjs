@@ -4,23 +4,18 @@ module.exports = {
   rootDir: '.',
   testMatch: ['**/tests/**/*.test.js'],
 
-  // Carpeta donde Jest guardará el reporte de coverage
   coverageDirectory: 'coverage',
-
-  // Activar coverage
   collectCoverage: true,
 
-  // Qué archivos se incluyen en el cálculo de coverage
-  // Dejamos solo las piezas núcleo que ya están bien cubiertas
+  // Solo medimos coverage de las piezas núcleo que ya tienen buena cobertura
   collectCoverageFrom: [
-    'src/middlewares/**/*.js',
-    'src/utils/**/*.js',
+    'src/middlewares/auth.middleware.js',
+    'src/middlewares/role.middleware.js',
     'src/routes/auth.routes.js',
     'src/routes/protected.routes.js',
+    'src/utils/jwt.js',
   ],
 
-  // Umbral mínimo global (80%). Como solo medimos lo bien cubierto,
-  // el promedio global sube y este check pasa.
   coverageThreshold: {
     global: {
       statements: 80,

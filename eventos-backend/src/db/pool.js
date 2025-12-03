@@ -1,26 +1,50 @@
 // src/db/pool.js
+require('dotenv').config();
 const { Pool } = require('pg');
 
 console.log('>>> Cargando pool desde:', __filename);
 
-const pool = new Pool({
-  host: 'localhost',
-  port: 15432,              // el puerto que ves en `docker compose ps`
-  user: 'eventos_app_user', // el usuario que pusimos en docker-compose
-  password: 'eventos_app_pass',
-  database: 'eventos_db',
-});
+const isTest = process.env.NODE_ENV === 'test';
+
+const config = {
+  // Host: primero DB_HOST, luego PGHOST, luego localhost
+  host:
+    process.env.DB_HOST ||
+    process.env.PGHOST ||
+    'localhost',
+
+  // Puerto: primero DB_PORT, luego PGPORT, y si no hay nada:
+  // - en test: 5432 (CI)
+  // - en otros entornos: 15432 (tu Docker local)
+  port: Number(
+    process.env.DB_PORT ||
+    process.env.PGPORT ||
+    (isTest ? 5432 : 15432)
+  ),
+
+  user:
+    process.env.DB_USER ||
+    process.env.PGUSER ||
+    'eventos_app_user',
+
+  password:
+    process.env.DB_PASSWORD ||
+    process.env.PGPASSWORD ||
+    'eventos_app_pass',
+
+  database:
+    process.env.DB_NAME ||
+    process.env.PGDATABASE ||
+    'eventos_db',
+};
 
 console.log('PG config (direct):', {
-  host: 'localhost',
-  port: 15432,
-  user: 'eventos_app_user',
-  database: 'eventos_db',
+  host: config.host,
+  port: config.port,
+  user: config.user,
+  database: config.database,
 });
 
-pool.on('error', (err) => {
-  console.error('Error inesperado en el pool de Postgres:', err);
-  process.exit(-1);
-});
+const pool = new Pool(config);
 
 module.exports = { pool };
