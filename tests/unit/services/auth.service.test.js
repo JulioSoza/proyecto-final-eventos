@@ -1,13 +1,13 @@
 // tests/unit/auth.service.test.js
-const AuthService = require('../../src/services/auth.service');
-const userRepository = require('../../src/repositories/user.repository');
-const hashLib = require('../../src/utils/hash');
-const jwtLib = require('../../src/utils/jwt');
+const AuthService = require('../../../src/services/auth.service');
+const userRepository = require('../../../src/repositories/user.repository');
+const hashLib = require('../../../src/utils/hash');
+const jwtLib = require('../../../src/utils/jwt');
 
 // Mock del userRepository (NO DB)
-jest.mock('../../src/repositories/user.repository');
-jest.mock('../../src/utils/hash');
-jest.mock('../../src/utils/jwt');
+jest.mock('../../../src/repositories/user.repository');
+jest.mock('../../../src/utils/hash');
+jest.mock('../../../src/utils/jwt');
 
 describe('AuthService - Unit Tests', () => {
   let service;

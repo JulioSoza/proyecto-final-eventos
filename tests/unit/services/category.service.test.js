@@ -1,4 +1,3 @@
-// tests/unit/services/category.service.test.js
 const CategoryService = require('../../../src/services/category.service');
 const categoryRepository = require('../../../src/repositories/category.repository');
 
@@ -7,6 +6,7 @@ jest.mock('../../../src/repositories/category.repository');
 
 describe('CategoryService - Unit Tests', () => {
   let service;
+  const mockUser = { id: 1 }; // usuario falso para pasar auth
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -14,10 +14,10 @@ describe('CategoryService - Unit Tests', () => {
   });
 
   test('createCategory debe fallar si name está vacío', async () => {
-    await expect(service.createCategory({ name: '' }))
+    await expect(service.createCategory({ name: '' }, mockUser))
       .rejects.toThrow('Category name is required');
 
-    await expect(service.createCategory({}))
+    await expect(service.createCategory({}, mockUser))
       .rejects.toThrow('Category name is required');
   });
 
@@ -27,7 +27,7 @@ describe('CategoryService - Unit Tests', () => {
       name: 'Conciertos'
     });
 
-    const result = await service.createCategory({ name: 'Conciertos' });
+    const result = await service.createCategory({ name: 'Conciertos' }, mockUser);
 
     expect(result.id).toBe(1);
     expect(result.name).toBe('Conciertos');
@@ -41,7 +41,7 @@ describe('CategoryService - Unit Tests', () => {
       { id: 1, name: 'Deportes' }
     ]);
 
-    const result = await service.listCategories();
+    const result = await service.listCategories(mockUser);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(1);
