@@ -1,5 +1,7 @@
 Este proyecto es el resultado de tu trabajo final para la asignatura y combina un API REST hecho con Node.js/Express y una aplicación web construida con React/Vite. La solución permite administrar eventos, vender boletos y gestionar usuarios con roles diferenciados.
 
+LINK DE LA GRABACION: https://drive.google.com/file/d/1tS_fszsaeotr7QGoKQ-1dnSCqW_cG4I2/view?usp=sharing
+
 Descripción general
 
 El repositorio se divide en dos carpetas principales:
